@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * Creates a new permission in the drupal system to access huuropzeggen
+ */
+function civicrm_privacy_permission() {
+  return array(
+    'CiviCRM_Privacy_Activity' => array(
+      'title' => t('Access to CiviCRM Privacy activity'),
+      'description' => t('Has access to the CiviCRM Privacy activity'),
+    ),
+  );
+}

@@ -1,0 +1,6 @@
+name = CiviCRM Privacy
+
+description = Drupal permissions for privacy activity
+core = 7.x
+package = PUM
+dependencies[] = civicrm (>=4.4)
