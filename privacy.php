@@ -15,6 +15,48 @@ function _privacy_civicrm_has_access() {
   }
   return false;
 }
+/**
+ * Function to create activity types for Private information 
+ */
+function _privacy_create_activity_types() {
+  $optionNames['private_case_information'] = array('component_id' => 7, 'label' => 'Private case information');
+  $optionNames['private_information'] = array('component_id' => null, 'label' => 'Private information');
+  foreach ($optionNames as $optionName => $optionValue) {
+    if (_privacy_activity_type_exists($optionName) == false) {
+      $params = array(
+        'name' => $optionName,
+        'label' => $optionValue['label'],
+        'component_id' => $optionValue['component_id'],
+        'weight' => 1,
+        'is_active' => 1,
+        'is_reserved' => 1
+      );
+      civicrm_api3('ActivityType', 'Create', $params);
+    }
+  }  
+}
+/**
+ * Function to check if activity type exists
+ */
+function _privacy_activity_type_exists($optionName) {
+  $optionGroupParams = array('name' => 'activity_type', 'return' => 'id');
+  try {
+    $optionGroupId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
+  } catch (CiviCRM_API3_Exception $ex) {
+    throw new Exception('Could not find an Option Group with name activity_type, '
+      . 'error from API OptionGroup Getvalue :'.$ex->getMessage());
+  }
+  $params = array(
+    'option_group_id' => $optionGroupId,
+    'name' => $optionName
+  );
+  $count = civicrm_api3('OptionValue', 'Getcount', $params);
+  if ($count >= 1) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 /**
  * Implementation of hook_civicrm_config
@@ -42,6 +84,10 @@ function privacy_civicrm_xmlMenu(&$files) {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_install
  */
 function privacy_civicrm_install() {
+  /*
+   * create activity type 'private information' if not exists
+   */  
+  _privacy_create_activity_types();
   return _privacy_civix_civicrm_install();
 }
 
