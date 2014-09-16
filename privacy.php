@@ -3,7 +3,7 @@
 require_once 'privacy.civix.php';
 
 /**
- * Returns wether the current user has access to see the privacy activity
+ * Returns whether the current user has access to see the privacy activity
  * 
  * @return boolean
  */
@@ -57,6 +57,19 @@ function _privacy_activity_type_exists($optionName) {
     return false;
   }
 }
+/**
+ * Implementation of hook_civicrm_buildForm
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
+ */
+function privacy_civicrm_buildForm($formName, &$form) {
+  if ($formName == 'CRM_Activity_Form_Activity') {
+    $defaults['details'] = 'Test Erik';
+    $form->setDefaults($defaults);
+    //CRM_Core_Error::debug('form', $form);
+    //exit();
+  }
+}
 
 /**
  * Implementation of hook_civicrm_config
@@ -90,7 +103,6 @@ function privacy_civicrm_install() {
   _privacy_create_activity_types();
   return _privacy_civix_civicrm_install();
 }
-
 /**
  * Implementation of hook_civicrm_uninstall
  *

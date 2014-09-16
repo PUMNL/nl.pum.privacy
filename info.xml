@@ -5,7 +5,7 @@
   <description>Privacy activity is only visible for people with the drupal permission 'View CiviCRM Private activity'</description>
   <license>AGPL-3.0</license>
   <maintainer>
-    <author>Jaap Jansma</author>
+    <author>Jaap Jansma & Erik Hommel</author>
     <email>helpdesk@civicoop.org</email>
   </maintainer>
   <releaseDate>2014-08-25</releaseDate>
@@ -14,7 +14,7 @@
   <compatibility>
     <ver>4.4</ver>
   </compatibility>
-  <comments>This is a new, undeveloped module</comments>
+  <comments>Alpha version</comments>
   <civix>
     <namespace>CRM/Privacy</namespace>
   </civix>
