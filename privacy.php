@@ -63,16 +63,25 @@ function _privacy_activity_type_exists($optionName) {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
  */
 function privacy_civicrm_buildForm($formName, &$form) {
-  if ($formName == 'CRM_Activity_Form_Activity') {
-    $defaults['details'] = 'Test Erik';
+  if ($formName == 'CRM_Case_Form_ActivityView') {
+    $form->addElement('text', 'pumPrivacy', '');
+    $form->addElement('text', 'pumPrivacyText', '');
+    $defaults['pumPrivacy'] = 0;
+    $defaults['pumPrivacyText'] = 'vervangende tekst';
     $form->setDefaults($defaults);
-    //CRM_Core_Error::debug('form', $form);
-    //exit();
   }
 }
-
 /**
- * Implementation of hook_civicrm_config
+ * Implementation of hook_civicrm_alterTemplateFile
+ * 
+ */
+function privacy_civicrm_alterTemplateFile($formName, &$form, $context, &$tplName) {
+  if ($formName === 'CRM_Case_Form_ActivityView') {
+    $tplName = 'testShow.tpl';
+  }
+}
+/**
+ * Implementation of hook_civicrm_conefig
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_config
  */
@@ -84,7 +93,6 @@ function privacy_civicrm_config(&$config) {
  * Implementation of hook_civicrm_xmlMenu
  *
  * @param $files array(string)
- *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_xmlMenu
  */
 function privacy_civicrm_xmlMenu(&$files) {
