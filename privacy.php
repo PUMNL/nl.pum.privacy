@@ -97,7 +97,7 @@ function _privacy_get_activity_type_option_group_id() {
  * 
  * @param array $activityList
  */
-function _privacy_remove_options(&$activityList) {
+function _privacy_remove_case_activity_options(&$activityList) {
   $listOptions = &$activityList->_options;
   foreach ($listOptions as $key => $listOption) {
     $config = CRM_Core_Config::singleton();
@@ -142,6 +142,23 @@ function _privacy_redirect_case_activity_form($form) {
   }
 }
 /**
+ * Function to remove options from select list for activity
+ */
+function _privacy_remove_activity_options(&$elements) {
+  foreach ($elements as &$formElement) {
+    if ($formElement->_attributes['name'] == 'activity_type_id' || 
+      $formElement->_attributes['name'] == 'followup_activity_type_id') {
+      $options = &$formElement->_options;
+      foreach ($options as $key => $option) {
+        $config = CRM_Core_Config::singleton();
+        if (in_array($option['attr']['value'], $config->pumPrivacyActivityTypes)) {
+          unset($options[$key]);
+        }
+      }
+    }
+  }
+}
+/**
  * Implementation of hook_civicrm_buildForm
  *
  *pe @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
@@ -155,10 +172,17 @@ function privacy_civicrm_buildForm($formName, &$form) {
     _privacy_redirect_case_activity_form($form);
   }
   
+  if ($formName == 'CRM_Activity_Form_Activity') {
+    if (_privacy_civicrm_has_access() == false) {
+      $elements = $form->getVar('_elements');
+      _privacy_remove_activity_options($elements);
+    }
+  }
+  
   if ($formName == 'CRM_Case_Form_CaseView') {
     if (_privacy_civicrm_has_access() == false) {
-      $activityList = $form->getElement('activity_type_id');
-      _privacy_remove_options($activityList);      
+      $activityList =  &$form->getElement('activity_type_id');
+      _privacy_remove_case_activity_options($activityList);
     }
   }
 }
