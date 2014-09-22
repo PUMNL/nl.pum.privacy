@@ -39,13 +39,7 @@ function _privacy_create_activity_types() {
  * Function to check if activity type exists
  */
 function _privacy_activity_type_exists($optionName) {
-  $optionGroupParams = array('name' => 'activity_type', 'return' => 'id');
-  try {
-    $optionGroupId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
-  } catch (CiviCRM_API3_Exception $ex) {
-    throw new Exception('Could not find an Option Group with name activity_type, '
-      . 'error from API OptionGroup Getvalue :'.$ex->getMessage());
-  }
+  $optionGroupId = _privacy_get_activity_type_option_group_id();
   $params = array(
     'option_group_id' => $optionGroupId,
     'name' => $optionName
@@ -58,17 +52,98 @@ function _privacy_activity_type_exists($optionName) {
   }
 }
 /**
+ * Function to add config elements for privacy to CiviCRM config
+ * 
+ * Array $activityTypeNames holds names of activity types that
+ * will be added to config
+ * Default text for privacy message is added too
+ */
+function _privacy_set_privacy_config(&$config) {
+  $activityTypeNames = array('private_case_information', 'private_information', 'DSA', 'CPAP Request');
+  $optionGroupId = _privacy_get_activity_type_option_group_id();
+  foreach ($activityTypeNames as $activityTypeName) {
+    $params = array(
+      'option_group_id' => $optionGroupId,
+      'name' => $activityTypeName,
+      'return' => 'value'
+    );
+    try {
+      $optionValue = civicrm_api3('OptionValue','Getvalue', $params);
+      $config->pumPrivacyActivityTypes[] = $optionValue;
+    } catch (CiviCRM_API3_Exception $ex) {
+    }
+  }
+  $config->pumPrivacyText = 'De details van deze activiteit zijn afgeschermd, '
+    . 'neem contact op met de expert coordinator voor nadere informatie';
+}
+/**
+ * Function to get the option group id for activity types
+ * 
+ * @return int $optionGroupId
+ * @throws Exception when error in API
+ */
+function _privacy_get_activity_type_option_group_id() {
+  $optionGroupParams = array('name' => 'activity_type', 'return' => 'id');
+  try {
+    $optionGroupId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
+  } catch (CiviCRM_API3_Exception $ex) {
+  throw new Exception('Could not find an Option Group with name activity_type, '
+    . 'error from API OptionGroup Getvalue :'.$ex->getMessage());      
+  }
+  return $optionGroupId;
+}
+/**
+ * Function to remove options from list for privacy activity types
+ * 
+ * @param array $activityList
+ */
+function _privacy_remove_options(&$activityList) {
+  $listOptions = &$activityList->_options;
+  foreach ($listOptions as $key => $listOption) {
+    $config = CRM_Core_Config::singleton();
+    if (in_array($listOption['attr']['value'], $config->pumPrivacyActivityTypes)) {
+      unset($listOptions[$key]);
+    }
+  }
+}
+/**
  * Implementation of hook_civicrm_buildForm
  *
- * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
+ *pe @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
  */
 function privacy_civicrm_buildForm($formName, &$form) {
-  if ($formName == 'CRM_Case_Form_ActivityView') {
+  if ($formName == 'CRM_Case_Form_ActivityView' || $formName == 'CRM_Case_Form_Activity') {
+    $snippet = CRM_Utils_Request::retrieve('snippet', 'Positive');
     $form->addElement('text', 'pumPrivacy', '');
-    $form->addElement('text', 'pumPrivacyText', '');
-    $defaults['pumPrivacy'] = 0;
-    $defaults['pumPrivacyText'] = 'vervangende tekst';
+    if (_privacy_civicrm_has_access()) {
+      $defaults['pumPrivacy'] = 1;
+    } else {
+      $defaults['pumPrivacy'] = 0;
+    }
+    if ($snippet != '4') {
+      $form->addElement('text', 'pumActivityRedirect', '');
+      $defaults['pumActivityRedirect'] = 1;
+      $session = CRM_Core_Session::singleton();
+      $form->assign('doneUrl', $session->readUserContext());
+    }
     $form->setDefaults($defaults);
+  }
+  
+  if ($formName == 'CRM_Case_Form_Activity') {
+    $pumPrivacy = $form->getElement('pumPrivacy');
+    $caseId = $form->getVar('_caseId');
+    $activityId = $form->getVar('_activityId');
+    if ($pumPrivacy->_attributes['value'] == 0) {
+      $viewUrl = CRM_Utils_System::url('civicrm/case/activity/view', 'cid='.$caseId.'&aid='.$activityId.'&type=', true);
+      CRM_Utils_System::redirect($viewUrl);
+    }
+  }
+  
+  if ($formName == 'CRM_Case_Form_CaseView') {
+    if (_privacy_civicrm_has_access() == false) {
+      $activityList = $form->getElement('activity_type_id');
+      _privacy_remove_options($activityList);      
+    }
   }
 }
 /**
@@ -77,7 +152,8 @@ function privacy_civicrm_buildForm($formName, &$form) {
  */
 function privacy_civicrm_alterTemplateFile($formName, &$form, $context, &$tplName) {
   if ($formName === 'CRM_Case_Form_ActivityView') {
-    $tplName = 'testShow.tpl';
+    
+    $tplName = 'PumCaseActivityView.tpl';
   }
 }
 /**
@@ -86,6 +162,10 @@ function privacy_civicrm_alterTemplateFile($formName, &$form, $context, &$tplNam
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_config
  */
 function privacy_civicrm_config(&$config) {
+  /*
+   * set config properties for privacy activity types
+   */
+  _privacy_set_privacy_config($config);
   _privacy_civix_civicrm_config($config);
 }
 
@@ -105,10 +185,6 @@ function privacy_civicrm_xmlMenu(&$files) {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_install
  */
 function privacy_civicrm_install() {
-  /*
-   * create activity type 'private information' if not exists
-   */  
-  _privacy_create_activity_types();
   return _privacy_civix_civicrm_install();
 }
 /**
@@ -126,6 +202,10 @@ function privacy_civicrm_uninstall() {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_enable
  */
 function privacy_civicrm_enable() {
+  /*
+   * create activity type 'private information' if not exists
+   */  
+  _privacy_create_activity_types();
   return _privacy_civix_civicrm_enable();
 }
 
