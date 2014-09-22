@@ -107,36 +107,52 @@ function _privacy_remove_options(&$activityList) {
   }
 }
 /**
+ * Function to handle buildForm for case activity
+ */
+function _privacy_build_case_activity_form(&$form) {
+  $snippet = CRM_Utils_Request::retrieve('snippet', 'Positive');
+  $form->addElement('text', 'pumPrivacy', '');
+  if (_privacy_civicrm_has_access()) {
+    $defaults['pumPrivacy'] = 1;
+  } else {
+    $defaults['pumPrivacy'] = 0;
+  }
+  if ($snippet != '4') {
+    $form->addElement('text', 'pumActivityRedirect', '');
+    $defaults['pumActivityRedirect'] = 1;
+    $session = CRM_Core_Session::singleton();
+    $form->assign('doneUrl', $session->readUserContext());
+  }
+  $form->setDefaults($defaults);
+}
+/**
+ * Function to redirect edit to view for case activity when required
+ */
+function _privacy_redirect_case_activity_form($form) {
+  $activityTypeId = $form->getVar('_activityTypeId');
+  $config = CRM_Core_Config::singleton();
+  if (in_array($activityTypeId, $config->pumPrivacyActivityTypes)) {
+    $pumPrivacy = $form->getElement('pumPrivacy');
+    if ($pumPrivacy->_attributes['value'] == 0) {
+      $caseId = $form->getVar('_caseId');
+      $activityId = $form->getVar('_activityId');
+      $viewUrl = CRM_Utils_System::url('civicrm/case/activity/view', 'cid='.$caseId.'&aid='.$activityId.'&type=', true);
+      CRM_Utils_System::redirect($viewUrl);
+    }
+  }
+}
+/**
  * Implementation of hook_civicrm_buildForm
  *
  *pe @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
  */
 function privacy_civicrm_buildForm($formName, &$form) {
   if ($formName == 'CRM_Case_Form_ActivityView' || $formName == 'CRM_Case_Form_Activity') {
-    $snippet = CRM_Utils_Request::retrieve('snippet', 'Positive');
-    $form->addElement('text', 'pumPrivacy', '');
-    if (_privacy_civicrm_has_access()) {
-      $defaults['pumPrivacy'] = 1;
-    } else {
-      $defaults['pumPrivacy'] = 0;
-    }
-    if ($snippet != '4') {
-      $form->addElement('text', 'pumActivityRedirect', '');
-      $defaults['pumActivityRedirect'] = 1;
-      $session = CRM_Core_Session::singleton();
-      $form->assign('doneUrl', $session->readUserContext());
-    }
-    $form->setDefaults($defaults);
+    _privacy_build_case_activity_form($form);
   }
   
   if ($formName == 'CRM_Case_Form_Activity') {
-    $pumPrivacy = $form->getElement('pumPrivacy');
-    $caseId = $form->getVar('_caseId');
-    $activityId = $form->getVar('_activityId');
-    if ($pumPrivacy->_attributes['value'] == 0) {
-      $viewUrl = CRM_Utils_System::url('civicrm/case/activity/view', 'cid='.$caseId.'&aid='.$activityId.'&type=', true);
-      CRM_Utils_System::redirect($viewUrl);
-    }
+    _privacy_redirect_case_activity_form($form);
   }
   
   if ($formName == 'CRM_Case_Form_CaseView') {
