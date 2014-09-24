@@ -111,19 +111,27 @@ function _privacy_remove_case_activity_options(&$activityList) {
  */
 function _privacy_build_case_activity_form(&$form) {
   $snippet = CRM_Utils_Request::retrieve('snippet', 'Positive');
-  $form->addElement('text', 'pumPrivacy', '');
   if (_privacy_civicrm_has_access()) {
-    $defaults['pumPrivacy'] = 1;
+    $form->assign('pumPrivacy', 1);
   } else {
-    $defaults['pumPrivacy'] = 0;
+    $form->assign('pumPrivacy', 0);
   }
   if ($snippet != '4') {
     $form->addElement('text', 'pumActivityRedirect', '');
-    $defaults['pumActivityRedirect'] = 1;
+    $form->assign('pumActivityRedirect', 1);
     $session = CRM_Core_Session::singleton();
     $form->assign('doneUrl', $session->readUserContext());
   }
-  $form->setDefaults($defaults);
+}
+/**
+ * Function to handle buildForm for activity links
+ */
+function _privacy_build_activity_links_form(&$form) {
+  if (_privacy_civicrm_has_access()) {
+    $form->assign('pumPrivacy', 1);
+  } else {
+    $form->assign('pumPrivacy', 0);
+  }
 }
 /**
  * Function to redirect edit to view for case activity when required
@@ -168,6 +176,10 @@ function privacy_civicrm_buildForm($formName, &$form) {
     _privacy_build_case_activity_form($form);
   }
   
+  if ($formName == 'CRM_Activity_Form_ActivityLinks') {
+    _privacy_build_activity_links_form($form);
+  }
+  
   if ($formName == 'CRM_Case_Form_Activity') {
     _privacy_redirect_case_activity_form($form);
   }
@@ -191,8 +203,7 @@ function privacy_civicrm_buildForm($formName, &$form) {
  * 
  */
 function privacy_civicrm_alterTemplateFile($formName, &$form, $context, &$tplName) {
-  if ($formName === 'CRM_Case_Form_ActivityView') {
-    
+  if ($formName === 'CRM_Case_Form_ActivityView') { 
     $tplName = 'PumCaseActivityView.tpl';
   }
 }
