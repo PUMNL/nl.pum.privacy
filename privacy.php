@@ -167,6 +167,19 @@ function _privacy_remove_activity_options(&$elements) {
   }
 }
 /**
+ * Function to reset default values for details for Activity in View mode
+ */
+function _privacy_build_activity_view_form(&$form) {
+  $config = CRM_Core_Config::singleton();
+  $activityTypeId = $form->getVar('_activityTypeId');
+  if (in_array($activityTypeId, $config->pumPrivacyActivityTypes)) {
+    $defaults['details'] = $config->pumPrivacyText;
+    $defaults['activity_details'] = $config->pumPrivacyText;
+    $form->setDefaults($defaults);
+  }
+}
+
+/**
  * Implementation of hook_civicrm_buildForm
  *
  *pe @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
@@ -186,8 +199,13 @@ function privacy_civicrm_buildForm($formName, &$form) {
   
   if ($formName == 'CRM_Activity_Form_Activity') {
     if (_privacy_civicrm_has_access() == false) {
-      $elements = $form->getVar('_elements');
-      _privacy_remove_activity_options($elements);
+      $action = $form->getVar('_action');
+      if ($action == CRM_Core_Action::VIEW) {
+        _privacy_build_activity_view_form($form);
+      } else {
+        $elements = $form->getVar('_elements');
+        _privacy_remove_activity_options($elements);
+      }
     }
   }
   
