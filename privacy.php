@@ -178,7 +178,38 @@ function _privacy_build_activity_view_form(&$form) {
     $form->setDefaults($defaults);
   }
 }
-
+/**
+ * Function to save and change the default details for Activity edit
+ */
+function _privacy_set_details_activity_edit(&$form) {
+  $config = CRM_Core_Config::singleton();
+  $activityTypeId = $form->getVar('_activityTypeId');
+  if (in_array($activityTypeId, $config->pumPrivacyActivityTypes)) {
+    $defaultValues = $form->getVar('_defaultValues');
+    /*
+     * hack with GLOBALS to save details so they can be put back in the pre
+     * hook
+     */
+    $GLOBALS['activity_details'] = $defaultValues['details'];
+    $defaults['details'] = $config->pumPrivacyText;
+    $defaults['activity_details'] = $config->pumPrivacyText;
+    $form->setDefaults($defaults);
+    $element = $form->getElement('details');
+    $element->freeze();
+  }
+}
+/**
+ * Function to re-apply original acitivity details
+ */
+function _privacy_reapply_activity_details(&$params) {
+  $config = CRM_Core_Config::singleton();
+  if (in_array($params['activity_type_id'], $config->pumPrivacyActivityTypes)) {
+    if (isset($GLOBALS['activity_details'])) {
+      $params['details'] = $GLOBALS['activity_details'];
+      unset($GLOBALS['activity_details']);
+    }
+  }
+}
 /**
  * Implementation of hook_civicrm_buildForm
  *
@@ -203,6 +234,9 @@ function privacy_civicrm_buildForm($formName, &$form) {
       if ($action == CRM_Core_Action::VIEW) {
         _privacy_build_activity_view_form($form);
       } else {
+        if ($action == CRM_Core_Action::UPDATE) {
+          _privacy_set_details_activity_edit($form);
+        }
         $elements = $form->getVar('_elements');
         _privacy_remove_activity_options($elements);
       }
@@ -224,6 +258,16 @@ function privacy_civicrm_alterTemplateFile($formName, &$form, $context, &$tplNam
   if ($formName === 'CRM_Case_Form_ActivityView') { 
     $tplName = 'PumCaseActivityView.tpl';
   }
+}
+/**
+ * Implementation of hook_civicrm_pre
+ */
+function privacy_civicrm_pre($op, $objectName, $id, &$params) {
+  if ($objectName == 'Activity' && $op == 'edit') {
+    if (_privacy_civicrm_has_access() == false) {
+      _privacy_reapply_activity_details($params);
+    }
+  } 
 }
 /**
  * Implementation of hook_civicrm_conefig
