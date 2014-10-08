@@ -59,7 +59,7 @@ function _privacy_activity_type_exists($optionName) {
  * Default text for privacy message is added too
  */
 function _privacy_set_privacy_config(&$config) {
-  $activityTypeNames = array('private_case_information', 'private_information', 'DSA', 'CPAP Request');
+  $activityTypeNames = array('private_case_information', 'private_information');
   $optionGroupId = _privacy_get_activity_type_option_group_id();
   foreach ($activityTypeNames as $activityTypeName) {
     $params = array(
