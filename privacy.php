@@ -203,10 +203,12 @@ function _privacy_set_details_activity_edit(&$form) {
  */
 function _privacy_reapply_activity_details(&$params) {
   $config = CRM_Core_Config::singleton();
-  if (in_array($params['activity_type_id'], $config->pumPrivacyActivityTypes)) {
-    if (isset($GLOBALS['activity_details'])) {
-      $params['details'] = $GLOBALS['activity_details'];
-      unset($GLOBALS['activity_details']);
+  if (isset($params['activity_type_id'])) {
+    if (in_array($params['activity_type_id'], $config->pumPrivacyActivityTypes)) {
+      if (isset($GLOBALS['activity_details'])) {
+        $params['details'] = $GLOBALS['activity_details'];
+        unset($GLOBALS['activity_details']);
+      }
     }
   }
 }
